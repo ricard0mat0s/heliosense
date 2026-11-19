@@ -1,8 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Sun, UserPlus } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Sun, UserPlus } from "lucide-react";
+import { FeedbackBanner } from "../components/FeedbackBanner";
 import { useAuth } from "../context/AuthContext";
-import { extractErrorMessage, maskCep, maskCpf, UFS_BRASIL } from "../utils/format";
+import {
+  extractErrorMessage,
+  maskCep,
+  maskCpf,
+  maskPhone,
+  UFS_BRASIL,
+} from "../utils/format";
 
 export function RegisterPage() {
   const { user, register } = useAuth();
@@ -23,6 +30,7 @@ export function RegisterPage() {
     uf: "MG",
     cep: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,196 +59,236 @@ export function RegisterPage() {
     }
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm text-stone-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20";
-
   return (
-    <div className="min-h-screen bg-[#FAF8F5] px-4 py-10">
+    <div className="min-h-screen bg-[#FAF8F5] px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white">
-              <Sun className="h-5 w-5" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-700 text-white shadow-xs">
+              <Sun className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-stone-900">Cadastro Residencial</h1>
-              <p className="text-xs text-stone-500">Crie sua conta no HelioSense</p>
+              <h1 className="text-xl font-extrabold tracking-tight text-stone-900">
+                Cadastro Residencial
+              </h1>
+              <p className="text-sm text-stone-600">Crie sua conta no HelioSense</p>
             </div>
           </div>
           <Link
             to="/login"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-600 hover:text-stone-900"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-stone-600 transition hover:text-stone-900"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Voltar ao login
           </Link>
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+          <FeedbackBanner tone="error" onDismiss={() => setError(null)}>
             {error}
-          </div>
+          </FeedbackBanner>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 rounded-2xl border border-stone-200/90 bg-white p-6 shadow-sm sm:p-8"
-        >
+        <form onSubmit={handleSubmit} className="hs-card space-y-7 p-6 sm:p-8">
           {/* Dados Pessoais */}
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-amber-700">
-              Dados Pessoais e Acesso
-            </h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <fieldset className="space-y-4">
+            <legend className="text-base font-bold tracking-tight text-stone-900">
+              Dados pessoais e acesso
+            </legend>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
+                <label htmlFor="reg-nome" className="hs-label">
                   Nome completo *
                 </label>
                 <input
+                  id="reg-nome"
                   required
+                  autoComplete="name"
                   value={form.nome}
                   onChange={(e) => updateField("nome", e.target.value)}
                   placeholder="Ex.: Ana Paula Ferreira"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-stone-700">CPF *</label>
+                <label htmlFor="reg-cpf" className="hs-label">
+                  CPF *
+                </label>
                 <input
+                  id="reg-cpf"
                   required
+                  inputMode="numeric"
                   value={form.cpf}
                   onChange={(e) => updateField("cpf", maskCpf(e.target.value))}
                   placeholder="000.000.000-00"
-                  className={`${inputClass} font-mono-num`}
+                  className="hs-input font-mono-num"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
+                <label htmlFor="reg-nasc" className="hs-label">
                   Data de nascimento *
                 </label>
                 <input
+                  id="reg-nasc"
                   type="date"
                   required
+                  autoComplete="bday"
                   value={form.data_nascimento}
                   onChange={(e) => updateField("data_nascimento", e.target.value)}
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-stone-700">E-mail *</label>
+                <label htmlFor="reg-email" className="hs-label">
+                  E-mail *
+                </label>
                 <input
+                  id="reg-email"
                   type="email"
                   required
+                  autoComplete="email"
                   value={form.email}
                   onChange={(e) => updateField("email", e.target.value)}
                   placeholder="voce@exemplo.com.br"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
+                <label htmlFor="reg-telefone" className="hs-label">
                   Telefone *
                 </label>
                 <input
+                  id="reg-telefone"
+                  type="tel"
                   required
+                  autoComplete="tel"
+                  inputMode="tel"
                   value={form.telefone}
-                  onChange={(e) => updateField("telefone", e.target.value)}
+                  onChange={(e) => updateField("telefone", maskPhone(e.target.value))}
                   placeholder="(38) 99999-0000"
-                  className={inputClass}
+                  className="hs-input font-mono-num"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
-                  Senha (mín. 6 caracteres) *
+                <label htmlFor="reg-senha" className="hs-label">
+                  Senha *
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={form.senha}
-                  onChange={(e) => updateField("senha", e.target.value)}
-                  placeholder="Crie uma senha forte"
-                  className={inputClass}
-                />
+                <div className="relative">
+                  <input
+                    id="reg-senha"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                    value={form.senha}
+                    onChange={(e) => updateField("senha", e.target.value)}
+                    placeholder="Mínimo de 6 caracteres"
+                    className="hs-input pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-800"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </fieldset>
 
           {/* Endereço de Contato */}
-          <div className="border-t border-stone-100 pt-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-amber-700">
-              Endereço de Contato
-            </h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-6">
+          <fieldset className="space-y-4 border-t border-stone-100 pt-6">
+            <legend className="text-base font-bold tracking-tight text-stone-900">
+              Endereço de contato
+            </legend>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
               <div className="sm:col-span-4">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
+                <label htmlFor="reg-logradouro" className="hs-label">
                   Logradouro *
                 </label>
                 <input
+                  id="reg-logradouro"
                   required
+                  autoComplete="street-address"
                   value={form.logradouro}
                   onChange={(e) => updateField("logradouro", e.target.value)}
                   placeholder="Rua, Avenida..."
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">Número *</label>
+                <label htmlFor="reg-numero" className="hs-label">
+                  Número *
+                </label>
                 <input
+                  id="reg-numero"
                   required
                   value={form.numero}
                   onChange={(e) => updateField("numero", e.target.value)}
                   placeholder="123 ou S/N"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">
+                <label htmlFor="reg-complemento" className="hs-label">
                   Complemento
                 </label>
                 <input
+                  id="reg-complemento"
                   value={form.complemento}
                   onChange={(e) => updateField("complemento", e.target.value)}
                   placeholder="Apto, bloco (opcional)"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">Bairro *</label>
+                <label htmlFor="reg-bairro" className="hs-label">
+                  Bairro *
+                </label>
                 <input
+                  id="reg-bairro"
                   required
                   value={form.bairro}
                   onChange={(e) => updateField("bairro", e.target.value)}
                   placeholder="Ex.: Centro"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">Cidade *</label>
+                <label htmlFor="reg-cidade" className="hs-label">
+                  Cidade *
+                </label>
                 <input
+                  id="reg-cidade"
                   required
+                  autoComplete="address-level2"
                   value={form.cidade}
                   onChange={(e) => updateField("cidade", e.target.value)}
                   placeholder="Ex.: Montes Claros"
-                  className={inputClass}
+                  className="hs-input"
                 />
               </div>
 
               <div className="sm:col-span-1">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">UF *</label>
+                <label htmlFor="reg-uf" className="hs-label">
+                  UF *
+                </label>
                 <select
+                  id="reg-uf"
                   value={form.uf}
                   onChange={(e) => updateField("uf", e.target.value)}
-                  className={inputClass}
+                  className="hs-select"
                 >
                   {UFS_BRASIL.map((uf) => (
                     <option key={uf} value={uf}>
@@ -251,24 +299,25 @@ export function RegisterPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-stone-700">CEP *</label>
+                <label htmlFor="reg-cep" className="hs-label">
+                  CEP *
+                </label>
                 <input
+                  id="reg-cep"
                   required
+                  inputMode="numeric"
+                  autoComplete="postal-code"
                   value={form.cep}
                   onChange={(e) => updateField("cep", maskCep(e.target.value))}
                   placeholder="39400-000"
-                  className={`${inputClass} font-mono-num`}
+                  className="hs-input font-mono-num"
                 />
               </div>
             </div>
-          </div>
+          </fieldset>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-60"
-          >
-            <UserPlus className="h-4 w-4" />
+          <button type="submit" disabled={submitting} className="hs-btn-primary w-full py-3">
+            <UserPlus className="h-4 w-4" aria-hidden="true" />
             {submitting ? "Criando conta..." : "Concluir cadastro"}
           </button>
         </form>

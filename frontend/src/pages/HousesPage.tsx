@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Cpu, Home, MapPin, Pencil, Plus, Trash2, Zap } from "lucide-react";
+import { ArrowRight, Cpu, Home, MapPin, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { api } from "../api/client";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { FeedbackBanner } from "../components/FeedbackBanner";
 import { Modal } from "../components/Modal";
+import { SkeletonBlock } from "../components/Skeleton";
 import type { Casa, CasaPayload } from "../types";
 import { extractErrorMessage, formatKwh, maskCep, UFS_BRASIL } from "../utils/format";
 
@@ -17,6 +20,37 @@ const emptyForm: CasaPayload = {
   cep: "",
 };
 
+function HousesSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2" aria-busy="true" aria-label="Carregando residências">
+      {Array.from({ length: 2 }, (_, i) => (
+        <div key={i} className="hs-card space-y-5 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <SkeletonBlock className="h-5 w-44" />
+              <SkeletonBlock className="h-4 w-full max-w-xs" />
+            </div>
+            <div className="flex gap-1.5">
+              <SkeletonBlock className="h-9 w-9" />
+              <SkeletonBlock className="h-9 w-9" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 border-t border-stone-100 pt-4">
+            <div className="space-y-2">
+              <SkeletonBlock className="h-3.5 w-16" />
+              <SkeletonBlock className="h-6 w-12" />
+            </div>
+            <div className="space-y-2">
+              <SkeletonBlock className="h-3.5 w-24" />
+              <SkeletonBlock className="h-6 w-28" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function HousesPage() {
   const [casas, setCasas] = useState<Casa[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +62,9 @@ export function HousesPage() {
   const [form, setForm] = useState<CasaPayload>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [deletingTarget, setDeletingTarget] = useState<Casa | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   async function loadCasas() {
     setLoading(true);
@@ -94,242 +131,271 @@ export function HousesPage() {
     }
   }
 
-  async function handleDelete(casa: Casa) {
+  async function confirmDelete() {
+    if (!deletingTarget) return;
     setError(null);
     setFeedback(null);
-    const label = casa.nome || `Residência #${casa.id_casa}`;
-    if (!window.confirm(`Deseja realmente excluir "${label}"?`)) return;
-
+    setDeletingBusy(true);
+    const label = deletingTarget.nome || `Residência #${deletingTarget.id_casa}`;
     try {
-      await api.deleteCasa(casa.id_casa);
-      setFeedback(`"${label}" excluída com sucesso.`);
+      await api.deleteCasa(deletingTarget.id_casa);
+      setFeedback(`"${label}" foi excluída com sucesso.`);
+      setDeletingTarget(null);
       await loadCasas();
     } catch (err) {
       setError(extractErrorMessage(err));
+      setDeletingTarget(null);
+    } finally {
+      setDeletingBusy(false);
     }
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-sm text-stone-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20";
+  const targetLabel = deletingTarget
+    ? deletingTarget.nome || `Residência #${deletingTarget.id_casa}`
+    : "";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            Tabela · casas
-          </p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-stone-900">
+          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900">
             Minhas Residências
           </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Cadastre os imóveis onde seus painéis solares estão instalados. Casas com painéis
-            vinculados são protegidas por <code className="font-mono text-xs">ON DELETE RESTRICT</code>.
+          <p className="mt-1 text-sm text-stone-600">
+            Cadastre os imóveis onde seus painéis solares estão instalados. Para excluir uma
+            residência, remova antes os painéis vinculados a ela.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Residência
+        <button type="button" onClick={openCreate} className="hs-btn-primary shrink-0">
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Nova residência
         </button>
       </div>
 
       {feedback && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+        <FeedbackBanner tone="success" onDismiss={() => setFeedback(null)}>
           {feedback}
-        </div>
+        </FeedbackBanner>
       )}
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+        <FeedbackBanner tone="error" onDismiss={() => setError(null)}>
           {error}
-        </div>
+        </FeedbackBanner>
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-stone-200 bg-white p-10 text-center text-sm text-stone-500">
-          Carregando residências...
-        </div>
+        <HousesSkeleton />
       ) : casas.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-stone-300 bg-white p-12 text-center">
-          <Home className="mx-auto h-10 w-10 text-amber-500" />
-          <h2 className="mt-3 text-lg font-bold text-stone-900">Nenhuma casa cadastrada</h2>
-          <p className="mt-1 text-sm text-stone-500">
-            Adicione sua primeira residência para começar a registrar painéis solares.
+        <div className="hs-card border-dashed border-stone-300 p-12 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+            <Home className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <h2 className="mt-4 text-lg font-bold text-stone-900">Nenhuma residência cadastrada</h2>
+          <p className="mx-auto mt-1.5 max-w-md text-sm text-stone-600">
+            Adicione seu primeiro imóvel para começar a organizar e monitorar seus painéis solares.
           </p>
+          <button type="button" onClick={openCreate} className="hs-btn-primary mt-5">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Cadastrar primeira residência
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {casas.map((casa) => (
-            <div
-              key={casa.id_casa}
-              className="flex flex-col justify-between rounded-2xl border border-stone-200/90 bg-white p-6 shadow-xs"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-extrabold text-stone-900">
-                      {casa.nome || `Residência #${casa.id_casa}`}
-                    </h2>
-                    <p className="mt-1 flex items-start gap-1.5 text-sm text-stone-600">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                      <span>
-                        {casa.logradouro}, {casa.numero}
-                        {casa.complemento ? ` — ${casa.complemento}` : ""} · {casa.bairro},{" "}
-                        {casa.cidade}/{casa.uf} · CEP{" "}
-                        <span className="font-mono-num">{maskCep(casa.cep)}</span>
-                      </span>
-                    </p>
-                  </div>
+          {casas.map((casa) => {
+            const label = casa.nome || `Residência #${casa.id_casa}`;
+            return (
+              <article key={casa.id_casa} className="hs-card flex flex-col justify-between p-6">
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-extrabold tracking-tight text-stone-900">
+                        {label}
+                      </h2>
+                      <p className="mt-1.5 flex items-start gap-1.5 text-sm leading-relaxed text-stone-600">
+                        <MapPin
+                          className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"
+                          aria-hidden="true"
+                        />
+                        <span>
+                          {casa.logradouro}, {casa.numero}
+                          {casa.complemento ? ` — ${casa.complemento}` : ""} · {casa.bairro},{" "}
+                          {casa.cidade}/{casa.uf} · CEP{" "}
+                          <span className="font-mono-num">{maskCep(casa.cep)}</span>
+                        </span>
+                      </p>
+                    </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex shrink-0 items-center gap-1">
                     <button
                       type="button"
                       onClick={() => openEdit(casa)}
-                      className="rounded-lg p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-900"
+                      className="hs-icon-btn"
+                      aria-label={`Editar ${label}`}
                       title="Editar residência"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(casa)}
-                      className="rounded-lg p-2 text-stone-500 transition hover:bg-rose-50 hover:text-rose-700"
+                      onClick={() => setDeletingTarget(casa)}
+                      className="hs-icon-btn hover:bg-rose-50 hover:text-rose-700"
+                      aria-label={`Excluir ${label}`}
                       title="Excluir residência"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-[#FAF8F5] p-3.5 ring-1 ring-stone-200/70">
+              <div className="mt-5">
+                <dl className="grid grid-cols-2 gap-4 border-t border-stone-100 pt-4">
                   <div>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-500">
-                      <Cpu className="h-3.5 w-3.5 text-amber-600" />
-                      Painéis
-                    </div>
-                    <div className="font-mono-num mt-1 text-lg font-extrabold text-stone-900">
+                    <dt className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
+                      <Cpu className="h-3.5 w-3.5 text-amber-700" aria-hidden="true" />
+                      Painéis instalados
+                    </dt>
+                    <dd className="font-mono-num mt-1 text-lg font-extrabold text-stone-900">
                       {casa.qtd_paineis}
-                    </div>
+                    </dd>
                   </div>
                   <div>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-500">
-                      <Zap className="h-3.5 w-3.5 text-emerald-600" />
-                      Geração Total
-                    </div>
-                    <div className="font-mono-num mt-1 text-lg font-extrabold text-stone-900">
+                    <dt className="flex items-center gap-1.5 text-xs font-medium text-stone-500">
+                      <Zap className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" />
+                      Geração total
+                    </dt>
+                    <dd className="font-mono-num mt-1 text-lg font-extrabold text-stone-900">
                       {formatKwh(casa.energia_total_kwh)}
-                    </div>
+                    </dd>
                   </div>
+                </dl>
+
+                <div className="mt-5 flex justify-end border-t border-stone-100 pt-3.5">
+                  <Link
+                    to={`/paineis?casa=${casa.id_casa}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:underline"
+                  >
+                    Ver painéis desta residência
+                    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Link>
                 </div>
               </div>
-
-              <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
-                <Link
-                  to={`/paineis?casa=${casa.id_casa}`}
-                  className="text-xs font-bold text-amber-700 hover:text-amber-800 hover:underline"
-                >
-                  Ver painéis desta casa →
-                </Link>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
 
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? "Editar Residência" : "Nova Residência"}
+        title={editing ? "Editar residência" : "Nova residência"}
         subtitle="Informe o endereço onde os painéis solares estão instalados."
       >
         {formError && (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-800">
+          <FeedbackBanner tone="error" className="mb-4" onDismiss={() => setFormError(null)}>
             {formError}
-          </div>
+          </FeedbackBanner>
         )}
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-stone-700">
-              Nome / Apelido (opcional)
+            <label htmlFor="house-nome" className="hs-label">
+              Nome ou apelido (opcional)
             </label>
             <input
+              id="house-nome"
               value={form.nome ?? ""}
               onChange={(e) => setForm((p) => ({ ...p, nome: e.target.value }))}
               placeholder="Ex.: Residência Principal, Casa de Campo"
-              className={inputClass}
+              className="hs-input"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-stone-700">
+              <label htmlFor="house-logradouro" className="hs-label">
                 Logradouro *
               </label>
               <input
+                id="house-logradouro"
                 required
+                autoComplete="street-address"
                 value={form.logradouro}
                 onChange={(e) => setForm((p) => ({ ...p, logradouro: e.target.value }))}
                 placeholder="Rua, Avenida..."
-                className={inputClass}
+                className="hs-input"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-stone-700">Número *</label>
+              <label htmlFor="house-numero" className="hs-label">
+                Número *
+              </label>
               <input
+                id="house-numero"
                 required
                 value={form.numero}
                 onChange={(e) => setForm((p) => ({ ...p, numero: e.target.value }))}
                 placeholder="123"
-                className={inputClass}
+                className="hs-input"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-stone-700">Complemento</label>
+              <label htmlFor="house-complemento" className="hs-label">
+                Complemento
+              </label>
               <input
+                id="house-complemento"
                 value={form.complemento ?? ""}
                 onChange={(e) => setForm((p) => ({ ...p, complemento: e.target.value }))}
                 placeholder="Opcional"
-                className={inputClass}
+                className="hs-input"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-stone-700">Bairro *</label>
+              <label htmlFor="house-bairro" className="hs-label">
+                Bairro *
+              </label>
               <input
+                id="house-bairro"
                 required
                 value={form.bairro}
                 onChange={(e) => setForm((p) => ({ ...p, bairro: e.target.value }))}
-                placeholder="Bairro"
-                className={inputClass}
+                placeholder="Ex.: Centro"
+                className="hs-input"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
             <div className="sm:col-span-3">
-              <label className="mb-1 block text-xs font-semibold text-stone-700">Cidade *</label>
+              <label htmlFor="house-cidade" className="hs-label">
+                Cidade *
+              </label>
               <input
+                id="house-cidade"
                 required
+                autoComplete="address-level2"
                 value={form.cidade}
                 onChange={(e) => setForm((p) => ({ ...p, cidade: e.target.value }))}
                 placeholder="Montes Claros"
-                className={inputClass}
+                className="hs-input"
               />
             </div>
             <div className="sm:col-span-1">
-              <label className="mb-1 block text-xs font-semibold text-stone-700">UF *</label>
+              <label htmlFor="house-uf" className="hs-label">
+                UF *
+              </label>
               <select
+                id="house-uf"
                 value={form.uf}
                 onChange={(e) => setForm((p) => ({ ...p, uf: e.target.value }))}
-                className={inputClass}
+                className="hs-select"
               >
                 {UFS_BRASIL.map((uf) => (
                   <option key={uf} value={uf}>
@@ -339,13 +405,18 @@ export function HousesPage() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-stone-700">CEP *</label>
+              <label htmlFor="house-cep" className="hs-label">
+                CEP *
+              </label>
               <input
+                id="house-cep"
                 required
+                inputMode="numeric"
+                autoComplete="postal-code"
                 value={form.cep}
                 onChange={(e) => setForm((p) => ({ ...p, cep: maskCep(e.target.value) }))}
                 placeholder="39400-000"
-                className={`${inputClass} font-mono-num`}
+                className="hs-input font-mono-num"
               />
             </div>
           </div>
@@ -354,20 +425,28 @@ export function HousesPage() {
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+              className="hs-btn-secondary"
             >
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:opacity-60"
-            >
-              {saving ? "Salvando..." : editing ? "Salvar alterações" : "Cadastrar casa"}
+            <button type="submit" disabled={saving} className="hs-btn-primary">
+              {saving ? "Salvando..." : editing ? "Salvar alterações" : "Cadastrar residência"}
             </button>
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={Boolean(deletingTarget)}
+        title="Excluir residência"
+        subtitle={targetLabel}
+        description={`Tem certeza que deseja excluir "${targetLabel}"? Residências que ainda possuem painéis instalados não podem ser removidas antes da desvinculação dos módulos.`}
+        confirmLabel="Excluir residência"
+        busyLabel="Excluindo..."
+        busy={deletingBusy}
+        onConfirm={confirmDelete}
+        onClose={() => setDeletingTarget(null)}
+      />
     </div>
   );
 }

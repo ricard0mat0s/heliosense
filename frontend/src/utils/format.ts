@@ -22,6 +22,16 @@ export function maskCep(value: string): string {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }
 
+export function maskPhone(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 export function formatKwh(value: number, decimals = 2): string {
   return `${value.toLocaleString("pt-BR", {
     minimumFractionDigits: decimals,
@@ -88,5 +98,122 @@ export function extractErrorMessage(err: unknown): string {
   if (err instanceof Error && err.message) {
     return err.message;
   }
-  return "Ocorreu um erro inesperado ao comunicar com a API.";
+  return "Não foi possível completar a solicitação. Tente novamente em instantes.";
+}
+
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  LOGIN: "Acesso à conta",
+  LOGIN_FALHA: "Tentativa de acesso falhou",
+  LOGOUT: "Saída da conta",
+  CADASTRO: "Criação de conta",
+  ATUALIZAR_PERFIL: "Atualização de perfil",
+  CRIAR_CASA: "Nova residência",
+  ATUALIZAR_CASA: "Edição de residência",
+  EXCLUIR_CASA: "Exclusão de residência",
+  CRIAR_MODELO_PAINEL: "Novo modelo de painel",
+  CRIAR_PAINEL: "Novo painel solar",
+  ATUALIZAR_PAINEL: "Edição de painel solar",
+  EXCLUIR_PAINEL: "Exclusão de painel solar",
+  REGISTRAR_LEITURA: "Registro de leitura",
+  SIMULAR_CURVA_24H: "Simulação diária (24h)",
+  RESOLVER_ALERTA: "Alerta resolvido",
+  DESATIVAR_CONTA: "Desativação de conta",
+};
+
+export const AUDIT_TARGET_LABELS: Record<string, string> = {
+  usuarios: "Conta e perfil",
+  casas: "Residências",
+  modelos_paineis: "Modelos de painel",
+  paineis: "Painéis solares",
+  leituras_energia: "Leituras de energia",
+  alertas: "Alertas",
+};
+
+const DETAIL_KEY_LABELS: Record<string, string> = {
+  email: "E-mail",
+  nome: "Nome",
+  cidade: "Cidade",
+  numero_serie: "Série",
+  status: "Status",
+  energia_kwh: "Energia (kWh)",
+  registrado_em: "Horário",
+  data: "Data",
+  anomalia: "Anomalia",
+  inseridas: "Inseridas",
+  ignoradas: "Ignoradas",
+  alertas_gerados: "Alertas",
+  marca: "Marca",
+  nome_modelo: "Modelo",
+  potencia_max_w: "Potência (W)",
+  motivo: "Motivo",
+  id_painel: "Painel",
+  id_casa: "Residência",
+  id_alerta: "Alerta",
+  id_leitura: "Leitura",
+  tipo_alerta: "Tipo",
+  resolvido: "Resolvido",
+};
+
+const DETAIL_VALUE_LABELS: Record<string, string> = {
+  ZERO_DIURNO: "Zero diurno",
+  ACIMA_CAPACIDADE: "Acima da capacidade",
+  zero_diurno: "Zero diurno",
+  acima_capacidade: "Acima da capacidade",
+  nenhuma: "Nenhuma",
+  ativo: "Ativo",
+  manutencao: "Manutenção",
+  inativo: "Inativo",
+};
+
+function formatDetailValue(key: string, value: unknown): string {
+  if (typeof value === "boolean") {
+    return value ? "Sim" : "Não";
+  }
+  if (typeof value === "string") {
+    if (DETAIL_VALUE_LABELS[value]) return DETAIL_VALUE_LABELS[value];
+    return value;
+  }
+  if (typeof value === "number" && (key === "id_painel" || key === "id_casa" || key === "id_alerta" || key === "id_leitura")) {
+    return `#${value}`;
+  }
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+export function formatAuditAction(acao: string): string {
+  return AUDIT_ACTION_LABELS[acao] ?? acao.replace(/_/g, " ").toLowerCase();
+}
+
+export function formatAuditTarget(tabela: string | null | undefined): string {
+  if (!tabela) return "Geral";
+  return AUDIT_TARGET_LABELS[tabela] ?? tabela;
+}
+
+export function formatAuditDetails(raw: string | null | undefined): string {
+  if (!raw) return "—";
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const entries = Object.entries(parsed as Record<string, unknown>)
+        .filter(([, v]) => v !== null && v !== undefined && v !== "")
+        .map(([k, v]) => {
+          const label = DETAIL_KEY_LABELS[k] ?? k.replace(/_/g, " ");
+          return `${label}: ${formatDetailValue(k, v)}`;
+        });
+      if (entries.length > 0) return entries.join(" · ");
+    }
+  } catch {
+    // Fall back to plain string when not JSON
+  }
+  return raw;
+}
+
+export function getInitials(name: string | null | undefined): string {
+  if (!name) return "HS";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "HS";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }

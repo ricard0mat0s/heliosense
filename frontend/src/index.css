@@ -1,14 +1,143 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --hs-canvas: #faf8f5;
+    --hs-surface: #ffffff;
+    --hs-ink: #1c1917;
+    --hs-accent: #b45309;
+    --hs-accent-hover: #92400e;
+  }
+
+  html {
+    background-color: var(--hs-canvas);
+    color: var(--hs-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background-color: #faf8f5;
-    color: #1c1917;
+    background-color: var(--hs-canvas);
+    color: var(--hs-ink);
+    caret-color: var(--hs-accent);
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  ::selection {
+    background-color: #fde68a;
+    color: #451a03;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--hs-accent);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Subtle warm scrollbar matching the surface palette */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d6d3d1 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #d6d3d1;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #a8a29e;
   }
 
   .font-mono-num {
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .hs-input {
+    @apply w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 transition-colors duration-150 hover:border-stone-400 focus:border-amber-700 focus:ring-2 focus:ring-amber-600/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500;
+  }
+
+  .hs-select {
+    @apply w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900 transition-colors duration-150 hover:border-stone-400 focus:border-amber-700 focus:ring-2 focus:ring-amber-600/20 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500;
+  }
+
+  .hs-label {
+    @apply mb-1.5 block text-xs font-semibold text-stone-700;
+  }
+
+  .hs-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-amber-800 active:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-55;
+  }
+
+  .hs-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-stone-700 shadow-xs transition-colors duration-150 hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900 active:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-55;
+  }
+
+  .hs-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-rose-700 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition-colors duration-150 hover:bg-rose-800 active:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-55;
+  }
+
+  .hs-btn-danger-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-semibold text-rose-700 transition-colors duration-150 hover:border-rose-700 hover:bg-rose-700 hover:text-white active:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-55;
+  }
+
+  .hs-icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors duration-150 hover:bg-stone-100 hover:text-stone-900 active:bg-stone-200/70;
+  }
+
+  .hs-card {
+    @apply rounded-2xl border border-stone-200/90 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.04)];
+  }
+}
+
+.hs-solar-grid {
+  background-image:
+    linear-gradient(to right, rgba(251, 191, 36, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(251, 191, 36, 0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
