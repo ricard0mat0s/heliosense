@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowUpRight,
-  Cpu,
   Home,
   Plus,
   RefreshCw,
@@ -20,22 +19,18 @@ import { extractErrorMessage, formatKwh } from "../utils/format";
 function DashboardSkeleton() {
   return (
     <div className="space-y-8" aria-busy="true" aria-label="Carregando resumo de geração">
-      <div className="hs-card grid grid-cols-1 divide-y divide-stone-100 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
-        {Array.from({ length: 4 }, (_, i) => (
+      <div className="hs-card grid grid-cols-1 divide-y divide-stone-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {Array.from({ length: 3 }, (_, i) => (
           <div key={i} className="space-y-2.5 p-5">
             <SkeletonBlock className="h-3.5 w-28" />
             <SkeletonBlock className="h-7 w-32" />
-            <SkeletonBlock className="h-3 w-36" />
           </div>
         ))}
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-end justify-between border-b border-stone-200/80 pb-3">
-          <div className="space-y-2">
-            <SkeletonBlock className="h-5 w-44" />
-            <SkeletonBlock className="h-3.5 w-64" />
-          </div>
+        <div className="flex items-center justify-between border-b border-stone-200/80 pb-3">
+          <SkeletonBlock className="h-5 w-44" />
           <SkeletonBlock className="h-6 w-28" />
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -48,7 +43,7 @@ function DashboardSkeleton() {
                 </div>
                 <SkeletonBlock className="h-5 w-16 rounded-full" />
               </div>
-              <div className="flex items-end justify-between border-t border-stone-100 pt-3">
+              <div className="flex items-center justify-between border-t border-stone-100 pt-3">
                 <SkeletonBlock className="h-6 w-24" />
                 <SkeletonBlock className="h-8 w-8 rounded-lg" />
               </div>
@@ -91,15 +86,10 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
-            Olá, {firstName}
-          </h1>
-          <p className="mt-1 text-sm text-stone-600">
-            Visão consolidada da geração solar por residência e por painel individual.
-          </p>
-        </div>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <h1 className="text-2xl font-extrabold tracking-tight text-stone-900 sm:text-3xl">
+          Olá, {firstName}
+        </h1>
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
@@ -140,22 +130,21 @@ export function DashboardPage() {
           {/* Cohesive Summary Bar */}
           <section
             aria-label="Resumo geral"
-            className="hs-card grid grid-cols-1 divide-y divide-stone-100 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x"
+            className="hs-card grid grid-cols-1 divide-y divide-stone-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
           >
-            <div className="p-5 sm:border-b sm:border-r sm:border-stone-100 lg:border-b-0 lg:border-r-0">
+            <div className="p-5">
               <div className="flex items-center gap-2 text-xs font-semibold text-stone-500">
                 <Zap className="h-4 w-4 text-amber-700" aria-hidden="true" />
-                Energia total gerada
+                Energia produzida
               </div>
               <div className="font-mono-num mt-2 text-2xl font-extrabold tracking-tight text-stone-900">
                 {resumo ? formatKwh(resumo.energia_total_kwh) : "—"}
               </div>
-              <p className="mt-1 text-xs text-stone-500">Acumulado em todas as residências</p>
             </div>
 
             <Link
               to="/casas"
-              className="group block p-5 transition-colors hover:bg-stone-50/80 sm:border-b sm:border-stone-100 lg:border-b-0"
+              className="group block p-5 transition-colors hover:bg-stone-50/80"
             >
               <div className="flex items-center justify-between text-xs font-semibold text-stone-500">
                 <span className="flex items-center gap-2">
@@ -170,32 +159,11 @@ export function DashboardPage() {
               <div className="font-mono-num mt-2 text-2xl font-extrabold tracking-tight text-stone-900">
                 {resumo ? resumo.total_casas : "—"}
               </div>
-              <p className="mt-1 text-xs text-stone-500">Imóveis monitorados</p>
-            </Link>
-
-            <Link
-              to="/paineis"
-              className="group block p-5 transition-colors hover:bg-stone-50/80 sm:border-r sm:border-stone-100 lg:border-r-0"
-            >
-              <div className="flex items-center justify-between text-xs font-semibold text-stone-500">
-                <span className="flex items-center gap-2">
-                  <Cpu className="h-4 w-4 text-emerald-700" aria-hidden="true" />
-                  Painéis ativos
-                </span>
-                <ArrowUpRight
-                  className="h-3.5 w-3.5 text-stone-400 transition group-hover:text-amber-700"
-                  aria-hidden="true"
-                />
-              </div>
-              <div className="font-mono-num mt-2 text-2xl font-extrabold tracking-tight text-stone-900">
-                {resumo ? `${resumo.paineis_ativos}/${resumo.total_paineis}` : "—"}
-              </div>
-              <p className="mt-1 text-xs text-stone-500">Módulos em operação no total</p>
             </Link>
 
             <Link
               to="/alertas"
-              className={`group block rounded-b-2xl p-5 transition-colors lg:rounded-r-2xl lg:rounded-bl-none ${
+              className={`group block rounded-b-2xl p-5 transition-colors sm:rounded-r-2xl sm:rounded-bl-none ${
                 hasOpenAlerts ? "bg-rose-50/55 hover:bg-rose-50" : "hover:bg-stone-50/80"
               }`}
             >
@@ -205,7 +173,7 @@ export function DashboardPage() {
                     className={`h-4 w-4 ${hasOpenAlerts ? "text-rose-700" : "text-emerald-700"}`}
                     aria-hidden="true"
                   />
-                  Alertas em aberto
+                  Alertas
                 </span>
                 <ArrowUpRight
                   className={`h-3.5 w-3.5 transition ${
@@ -223,13 +191,6 @@ export function DashboardPage() {
               >
                 {resumo ? resumo.alertas_abertos : "—"}
               </div>
-              <p
-                className={`mt-1 text-xs font-medium ${
-                  hasOpenAlerts ? "text-rose-800" : "text-stone-500"
-                }`}
-              >
-                {hasOpenAlerts ? "Verificações pendentes na central" : "Nenhuma anomalia em aberto"}
-              </p>
             </Link>
           </section>
 
@@ -242,13 +203,9 @@ export function DashboardPage() {
               <h2 className="mt-4 text-lg font-bold text-stone-900">
                 Nenhuma residência cadastrada
               </h2>
-              <p className="mx-auto mt-1.5 max-w-md text-sm text-stone-600">
-                Cadastre sua primeira casa e adicione os painéis solares instalados para acompanhar
-                a geração diária e receber alertas automáticos.
-              </p>
               <Link to="/casas" className="hs-btn-primary mt-5">
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                Cadastrar primeira residência
+                Cadastrar residência
               </Link>
             </div>
           ) : (
@@ -258,35 +215,24 @@ export function DashboardPage() {
                   const housePanels = resumo.paineis.filter((p) => p.id_casa === casa.id_casa);
                   return (
                     <section key={casa.id_casa} className="space-y-4">
-                      <div className="flex flex-col justify-between gap-2 border-b border-stone-200/90 pb-3 sm:flex-row sm:items-end">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            <h2 className="text-lg font-extrabold tracking-tight text-stone-900">
-                              {casa.nome || `Residência #${casa.id_casa}`}
-                            </h2>
-                            <span className="rounded-full bg-stone-200/75 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
-                              {casa.qtd_paineis} {casa.qtd_paineis === 1 ? "painel" : "painéis"}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-stone-500">
-                            Selecione um painel para consultar os gráficos horário e diário ou
-                            simular leituras.
-                          </p>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200/90 pb-3">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                          <h2 className="text-lg font-extrabold tracking-tight text-stone-900">
+                            {casa.nome || `Residência #${casa.id_casa}`}
+                          </h2>
+                          <span className="rounded-full bg-stone-200/75 px-2.5 py-0.5 text-xs font-semibold text-stone-700">
+                            {casa.qtd_paineis} {casa.qtd_paineis === 1 ? "painel" : "painéis"}
+                          </span>
                         </div>
 
-                        <div className="text-left sm:text-right">
-                          <span className="text-xs font-medium text-stone-500">
-                            Total da residência
-                          </span>
-                          <div className="font-mono-num text-xl font-extrabold text-amber-800">
-                            {formatKwh(casa.energia_total_casa)}
-                          </div>
+                        <div className="font-mono-num text-xl font-extrabold text-amber-800">
+                          {formatKwh(casa.energia_total_casa)}
                         </div>
                       </div>
 
                       {housePanels.length === 0 ? (
                         <div className="hs-card border-dashed border-stone-300 px-6 py-8 text-center text-sm text-stone-600">
-                          Nenhum painel instalado nesta residência ainda.{" "}
+                          Nenhum painel instalado.{" "}
                           <Link
                             to={`/paineis?casa=${casa.id_casa}`}
                             className="font-semibold text-amber-800 hover:underline"
@@ -316,14 +262,9 @@ export function DashboardPage() {
                                 <PanelStatusBadge status={panel.status} />
                               </div>
 
-                              <div className="mt-5 flex items-end justify-between border-t border-stone-100 pt-3.5">
-                                <div>
-                                  <div className="text-xs font-medium text-stone-500">
-                                    Produção acumulada
-                                  </div>
-                                  <div className="font-mono-num mt-0.5 text-lg font-extrabold text-stone-900">
-                                    {formatKwh(panel.energia_total_painel)}
-                                  </div>
+                              <div className="mt-5 flex items-center justify-between border-t border-stone-100 pt-3.5">
+                                <div className="font-mono-num text-lg font-extrabold text-stone-900">
+                                  {formatKwh(panel.energia_total_painel)}
                                 </div>
 
                                 <div className="flex items-center gap-2">
