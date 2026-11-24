@@ -3,6 +3,7 @@ import pytest
 
 from app.main import app
 from app.repositories import reset_repository
+from app.schemas import is_valid_cpf
 
 
 @pytest.fixture(autouse=True)
@@ -34,7 +35,7 @@ def test_health_and_demo_login() -> None:
     headers = _login_demo()
     me = client.get("/api/usuarios/me", headers=headers)
     assert me.status_code == 200
-    assert me.json()["cpf"] == "12345678901"
+    assert me.json()["cpf"] == "12345678909"
 
 
 def test_dashboard_stored_procedure_and_views() -> None:
@@ -236,7 +237,7 @@ def test_simulate_day_and_user_isolation() -> None:
     other = client.post(
         "/api/auth/register",
         json={
-            "cpf": "11122233344",
+            "cpf": "11122233396",
             "nome": "Joana Rocha",
             "data_nascimento": "1995-03-10",
             "email": "joana@heliosense.com.br",
@@ -256,4 +257,93 @@ def test_simulate_day_and_user_isolation() -> None:
     assert client.get("/api/casas/1", headers=other_headers).status_code == 404
     assert client.get("/api/paineis/1", headers=other_headers).status_code == 404
     assert client.get("/api/casas", headers=other_headers).json() == []
+
+
+def test_is_valid_cpf_algorithm() -> None:
+    valid_cpfs = [
+        "12345678909",
+        "123.456.789-09",
+        "52998224725",
+        "529.982.247-25",
+        "98765432100",
+        "11122233396",
+        "39053344705",
+    ]
+    for cpf in valid_cpfs:
+        assert is_valid_cpf(cpf) is True, f"Expected valid CPF: {cpf}"
+
+    invalid_cpfs = [
+        "",
+        "1234567890",  # 10 digits
+        "123456789091",  # 12 digits
+        "00000000000",
+        "11111111111",
+        "222.222.222-22",
+        "99999999999",
+        "12345678901",  # wrong second check digit
+        "12345678919",  # wrong first check digit
+        "11122233344",  # invalid check digits
+        "52998224752",  # swapped check digits
+        "abc.def.ghi-jk",
+    ]
+    for cpf in invalid_cpfs:
+        assert is_valid_cpf(cpf) is False, f"Expected invalid CPF: {cpf}"
+
+
+@pytest.mark.parametrize(
+    "invalid_cpf",
+    [
+        "111.111.111-11",
+        "00000000000",
+        "123.456.789-01",
+        "11122233344",
+        "529.982.247-20",
+        "123.456.789",
+    ],
+)
+def test_register_rejects_invalid_cpf(invalid_cpf: str) -> None:
+    resp = client.post(
+        "/api/auth/register",
+        json={
+            "cpf": invalid_cpf,
+            "nome": "Usuario Invalido",
+            "data_nascimento": "1990-01-15",
+            "email": "invalido@heliosense.com.br",
+            "senha": "SenhaSegura123",
+            "telefone": "(38) 99000-1111",
+            "logradouro": "Rua A",
+            "numero": "10",
+            "bairro": "Centro",
+            "cidade": "Montes Claros",
+            "uf": "MG",
+            "cep": "39400-000",
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_register_rejects_duplicate_valid_cpf() -> None:
+    payload = {
+        "cpf": "529.982.247-25",
+        "nome": "Lucia Andrade",
+        "data_nascimento": "1991-06-12",
+        "email": "lucia1@heliosense.com.br",
+        "senha": "SenhaSegura123",
+        "telefone": "(38) 99333-4455",
+        "logradouro": "Rua C",
+        "numero": "30",
+        "bairro": "Centro",
+        "cidade": "Montes Claros",
+        "uf": "MG",
+        "cep": "39400-000",
+    }
+    first = client.post("/api/auth/register", json=payload)
+    assert first.status_code == 201
+    assert first.json()["usuario"]["cpf"] == "52998224725"
+
+    duplicate = client.post(
+        "/api/auth/register",
+        json={**payload, "cpf": "52998224725", "email": "lucia2@heliosense.com.br"},
+    )
+    assert duplicate.status_code == 409
 

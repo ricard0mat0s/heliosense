@@ -53,7 +53,7 @@ class MockRepository(HelioSenseRepository):
 
     def _seed_demo_data(self) -> None:
         now = datetime.now().replace(minute=0, second=0, microsecond=0)
-        demo_cpf = "12345678901"
+        demo_cpf = "12345678909"
         demo_hash = bcrypt.hashpw(b"HelioSense@2026", bcrypt.gensalt()).decode("utf-8")
 
         self._users[demo_cpf] = {

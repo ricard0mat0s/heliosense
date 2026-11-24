@@ -16,6 +16,31 @@ export function maskCpf(value: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
+export function isValidCpf(value: string): boolean {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11 || /^(\d)\1{10}$/.test(digits)) {
+    return false;
+  }
+
+  let sum1 = 0;
+  for (let i = 0; i < 9; i += 1) {
+    sum1 += Number(digits[i]) * (10 - i);
+  }
+  let check1 = (sum1 * 10) % 11;
+  if (check1 === 10) check1 = 0;
+  if (Number(digits[9]) !== check1) {
+    return false;
+  }
+
+  let sum2 = 0;
+  for (let i = 0; i < 10; i += 1) {
+    sum2 += Number(digits[i]) * (11 - i);
+  }
+  let check2 = (sum2 * 10) % 11;
+  if (check2 === 10) check2 = 0;
+  return Number(digits[10]) === check2;
+}
+
 export function maskCep(value: string): string {
   const digits = onlyDigits(value).slice(0, 8);
   if (digits.length <= 5) return digits;

@@ -19,6 +19,28 @@ def _only_digits(value: str) -> str:
     return re.sub(r"\D", "", value)
 
 
+def is_valid_cpf(value: str) -> bool:
+    """Validate a Brazilian CPF using the official Receita Federal check-digit algorithm."""
+    digits = _only_digits(value)
+    if len(digits) != 11 or len(set(digits)) == 1:
+        return False
+
+    nums = [int(d) for d in digits]
+
+    total_1 = sum(num * weight for num, weight in zip(nums[:9], range(10, 1, -1)))
+    check_1 = (total_1 * 10) % 11
+    if check_1 == 10:
+        check_1 = 0
+    if nums[9] != check_1:
+        return False
+
+    total_2 = sum(num * weight for num, weight in zip(nums[:10], range(11, 1, -1)))
+    check_2 = (total_2 * 10) % 11
+    if check_2 == 10:
+        check_2 = 0
+    return nums[10] == check_2
+
+
 class HealthOut(BaseModel):
     status: str
     data_source: Literal["mock", "mysql"]
@@ -49,6 +71,8 @@ class UsuarioRegister(BaseModel):
         digits = _only_digits(v)
         if len(digits) != 11:
             raise ValueError("CPF deve conter exatamente 11 dígitos.")
+        if not is_valid_cpf(digits):
+            raise ValueError("CPF inválido. Verifique os números informados.")
         return digits
 
     @field_validator("cep")

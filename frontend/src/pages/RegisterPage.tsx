@@ -1,19 +1,22 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff, Sun, UserPlus } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Sun, UserPlus } from "lucide-react";
 import { FeedbackBanner } from "../components/FeedbackBanner";
 import { useAuth } from "../context/AuthContext";
 import {
   extractErrorMessage,
+  isValidCpf,
   maskCep,
   maskCpf,
   maskPhone,
+  onlyDigits,
   UFS_BRASIL,
 } from "../utils/format";
 
 export function RegisterPage() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
+  const cpfInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     cpf: "",
@@ -30,6 +33,7 @@ export function RegisterPage() {
     uf: "MG",
     cep: "",
   });
+  const [cpfTouched, setCpfTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +42,17 @@ export function RegisterPage() {
     return <Navigate to="/" replace />;
   }
 
+  const cpfDigits = onlyDigits(form.cpf);
+  const cpfComplete = cpfDigits.length === 11;
+  const cpfValid = cpfComplete && isValidCpf(cpfDigits);
+  const showCpfError =
+    (cpfComplete && !cpfValid) || (cpfTouched && cpfDigits.length > 0 && !cpfValid);
+  const cpfErrorMessage = !showCpfError
+    ? null
+    : cpfDigits.length < 11
+      ? "CPF deve conter 11 dígitos."
+      : "CPF inválido. Verifique os números informados.";
+
   function updateField(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -45,6 +60,18 @@ export function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!isValidCpf(form.cpf)) {
+      setCpfTouched(true);
+      setError(
+        cpfDigits.length !== 11
+          ? "CPF deve conter exatamente 11 dígitos."
+          : "CPF inválido. Verifique os números informados."
+      );
+      cpfInputRef.current?.focus();
+      return;
+    }
+
     setSubmitting(true);
     try {
       await register({
@@ -115,15 +142,45 @@ export function RegisterPage() {
                 <label htmlFor="reg-cpf" className="hs-label">
                   CPF *
                 </label>
-                <input
-                  id="reg-cpf"
-                  required
-                  inputMode="numeric"
-                  value={form.cpf}
-                  onChange={(e) => updateField("cpf", maskCpf(e.target.value))}
-                  placeholder="000.000.000-00"
-                  className="hs-input font-mono-num"
-                />
+                <div className="relative">
+                  <input
+                    ref={cpfInputRef}
+                    id="reg-cpf"
+                    required
+                    inputMode="numeric"
+                    maxLength={14}
+                    aria-invalid={showCpfError}
+                    aria-describedby={showCpfError ? "reg-cpf-error" : undefined}
+                    value={form.cpf}
+                    onChange={(e) => updateField("cpf", maskCpf(e.target.value))}
+                    onBlur={() => setCpfTouched(true)}
+                    placeholder="000.000.000-00"
+                    className={`hs-input font-mono-num pr-10 ${
+                      showCpfError
+                        ? "border-rose-500 hover:border-rose-600 focus:border-rose-600 focus:ring-rose-500/20"
+                        : cpfValid
+                          ? "border-emerald-600/70 hover:border-emerald-700 focus:border-emerald-700 focus:ring-emerald-600/20"
+                          : ""
+                    }`}
+                  />
+                  {showCpfError && (
+                    <AlertCircle
+                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-rose-600"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {cpfValid && (
+                    <CheckCircle2
+                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-700"
+                      aria-hidden="true"
+                    />
+                  )}
+                </div>
+                {cpfErrorMessage && (
+                  <p id="reg-cpf-error" role="alert" className="mt-1.5 text-xs font-medium text-rose-700">
+                    {cpfErrorMessage}
+                  </p>
+                )}
               </div>
 
               <div>

@@ -82,7 +82,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       } else if (Array.isArray(detail) && detail.length > 0) {
         const first = detail[0] as { msg?: string; loc?: string[] };
         const field = first.loc?.[first.loc.length - 1];
-        message = field ? `${field}: ${first.msg ?? "Valor inválido"}` : (first.msg ?? message);
+        const rawMsg = first.msg?.replace(/^Value error,\s*/i, "");
+        message = field ? `${field}: ${rawMsg ?? "Valor inválido"}` : (rawMsg ?? message);
       }
     }
     throw new ApiError(response.status, message);
