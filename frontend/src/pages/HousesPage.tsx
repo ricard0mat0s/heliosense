@@ -2,10 +2,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Cpu, Home, MapPin, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { api } from "../api/client";
+import { CepInput } from "../components/CepInput";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { FeedbackBanner } from "../components/FeedbackBanner";
 import { Modal } from "../components/Modal";
 import { SkeletonBlock } from "../components/Skeleton";
+import { useCepAutoFill } from "../hooks/useCepAutoFill";
 import type { Casa, CasaPayload } from "../types";
 import { extractErrorMessage, formatKwh, maskCep, UFS_BRASIL } from "../utils/format";
 
@@ -63,6 +65,15 @@ export function HousesPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const {
+    cepStatus,
+    cepMessage,
+    cepTouched,
+    handleCepChange,
+    handleCepBlur,
+    resetCepLookup,
+  } = useCepAutoFill(setForm);
+
   const [deletingTarget, setDeletingTarget] = useState<Casa | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
 
@@ -82,7 +93,13 @@ export function HousesPage() {
     loadCasas();
   }, []);
 
+  function closeModal() {
+    resetCepLookup();
+    setModalOpen(false);
+  }
+
   function openCreate() {
+    resetCepLookup();
     setEditing(null);
     setForm(emptyForm);
     setFormError(null);
@@ -90,6 +107,7 @@ export function HousesPage() {
   }
 
   function openEdit(casa: Casa) {
+    resetCepLookup();
     setEditing(casa);
     setForm({
       nome: casa.nome ?? "",
@@ -122,7 +140,7 @@ export function HousesPage() {
         await api.createCasa(payload);
         setFeedback("Nova residência cadastrada com sucesso.");
       }
-      setModalOpen(false);
+      closeModal();
       await loadCasas();
     } catch (err) {
       setFormError(extractErrorMessage(err));
@@ -290,9 +308,10 @@ export function HousesPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={closeModal}
         title={editing ? "Editar residência" : "Nova residência"}
         subtitle="Informe o endereço onde os painéis solares estão instalados."
+        maxWidthClass="max-w-xl"
       >
         {formError && (
           <FeedbackBanner tone="error" className="mb-4" onDismiss={() => setFormError(null)}>
@@ -314,8 +333,20 @@ export function HousesPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+            <div className="sm:col-span-4">
+              <CepInput
+                id="house-cep"
+                value={form.cep}
+                status={cepStatus}
+                message={cepMessage}
+                touched={cepTouched}
+                onChange={handleCepChange}
+                onBlur={handleCepBlur}
+              />
+            </div>
+
+            <div className="sm:col-span-8">
               <label htmlFor="house-logradouro" className="hs-label">
                 Logradouro *
               </label>
@@ -329,7 +360,8 @@ export function HousesPage() {
                 className="hs-input"
               />
             </div>
-            <div>
+
+            <div className="sm:col-span-4">
               <label htmlFor="house-numero" className="hs-label">
                 Número *
               </label>
@@ -342,10 +374,8 @@ export function HousesPage() {
                 className="hs-input"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
+            <div className="sm:col-span-8">
               <label htmlFor="house-complemento" className="hs-label">
                 Complemento
               </label>
@@ -357,7 +387,8 @@ export function HousesPage() {
                 className="hs-input"
               />
             </div>
-            <div>
+
+            <div className="sm:col-span-5">
               <label htmlFor="house-bairro" className="hs-label">
                 Bairro *
               </label>
@@ -370,10 +401,8 @@ export function HousesPage() {
                 className="hs-input"
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-5">
               <label htmlFor="house-cidade" className="hs-label">
                 Cidade *
               </label>
@@ -387,7 +416,8 @@ export function HousesPage() {
                 className="hs-input"
               />
             </div>
-            <div className="sm:col-span-1">
+
+            <div className="sm:col-span-2">
               <label htmlFor="house-uf" className="hs-label">
                 UF *
               </label>
@@ -404,27 +434,12 @@ export function HousesPage() {
                 ))}
               </select>
             </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="house-cep" className="hs-label">
-                CEP *
-              </label>
-              <input
-                id="house-cep"
-                required
-                inputMode="numeric"
-                autoComplete="postal-code"
-                value={form.cep}
-                onChange={(e) => setForm((p) => ({ ...p, cep: maskCep(e.target.value) }))}
-                placeholder="39400-000"
-                className="hs-input font-mono-num"
-              />
-            </div>
           </div>
 
           <div className="flex justify-end gap-2.5 border-t border-stone-100 pt-4">
             <button
               type="button"
-              onClick={() => setModalOpen(false)}
+              onClick={closeModal}
               className="hs-btn-secondary"
             >
               Cancelar

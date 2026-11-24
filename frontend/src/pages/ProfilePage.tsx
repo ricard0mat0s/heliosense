@@ -2,9 +2,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, Save, UserX } from "lucide-react";
 import { api } from "../api/client";
+import { CepInput } from "../components/CepInput";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { FeedbackBanner } from "../components/FeedbackBanner";
 import { useAuth } from "../context/AuthContext";
+import { useCepAutoFill } from "../hooks/useCepAutoFill";
 import {
   extractErrorMessage,
   formatDateOnly,
@@ -38,8 +40,18 @@ export function ProfilePage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
 
+  const {
+    cepStatus,
+    cepMessage,
+    cepTouched,
+    handleCepChange,
+    handleCepBlur,
+    resetCepLookup,
+  } = useCepAutoFill(setForm);
+
   useEffect(() => {
     if (!user) return;
+    resetCepLookup();
     setForm({
       nome: user.nome,
       data_nascimento: user.data_nascimento.slice(0, 10),
@@ -52,7 +64,7 @@ export function ProfilePage() {
       uf: user.uf,
       cep: maskCep(user.cep),
     });
-  }, [user]);
+  }, [user, resetCepLookup]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -189,8 +201,20 @@ export function ProfilePage() {
           <legend className="text-base font-bold tracking-tight text-stone-900">
             Endereço de contato
           </legend>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-12">
             <div className="sm:col-span-4">
+              <CepInput
+                id="profile-cep"
+                value={form.cep}
+                status={cepStatus}
+                message={cepMessage}
+                touched={cepTouched}
+                onChange={handleCepChange}
+                onBlur={handleCepBlur}
+              />
+            </div>
+
+            <div className="sm:col-span-8">
               <label htmlFor="profile-logradouro" className="hs-label">
                 Logradouro *
               </label>
@@ -204,7 +228,7 @@ export function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-4">
               <label htmlFor="profile-numero" className="hs-label">
                 Número *
               </label>
@@ -217,7 +241,7 @@ export function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-8">
               <label htmlFor="profile-complemento" className="hs-label">
                 Complemento
               </label>
@@ -230,7 +254,7 @@ export function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-5">
               <label htmlFor="profile-bairro" className="hs-label">
                 Bairro *
               </label>
@@ -243,7 +267,7 @@ export function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-5">
               <label htmlFor="profile-cidade" className="hs-label">
                 Cidade *
               </label>
@@ -257,7 +281,7 @@ export function ProfilePage() {
               />
             </div>
 
-            <div className="sm:col-span-1">
+            <div className="sm:col-span-2">
               <label htmlFor="profile-uf" className="hs-label">
                 UF *
               </label>
@@ -273,21 +297,6 @@ export function ProfilePage() {
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label htmlFor="profile-cep" className="hs-label">
-                CEP *
-              </label>
-              <input
-                id="profile-cep"
-                required
-                inputMode="numeric"
-                autoComplete="postal-code"
-                value={form.cep}
-                onChange={(e) => setForm((p) => ({ ...p, cep: maskCep(e.target.value) }))}
-                className="hs-input font-mono-num"
-              />
             </div>
           </div>
         </fieldset>

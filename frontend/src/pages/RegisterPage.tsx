@@ -1,12 +1,13 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Sun, UserPlus } from "lucide-react";
+import { CepInput } from "../components/CepInput";
 import { FeedbackBanner } from "../components/FeedbackBanner";
 import { useAuth } from "../context/AuthContext";
+import { useCepAutoFill } from "../hooks/useCepAutoFill";
 import {
   extractErrorMessage,
   isValidCpf,
-  maskCep,
   maskCpf,
   maskPhone,
   onlyDigits,
@@ -37,6 +38,9 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const { cepStatus, cepMessage, cepTouched, handleCepChange, handleCepBlur } =
+    useCepAutoFill(setForm);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -265,8 +269,20 @@ export function RegisterPage() {
             <legend className="text-base font-bold tracking-tight text-stone-900">
               Endereço de contato
             </legend>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-12">
               <div className="sm:col-span-4">
+                <CepInput
+                  id="reg-cep"
+                  value={form.cep}
+                  status={cepStatus}
+                  message={cepMessage}
+                  touched={cepTouched}
+                  onChange={handleCepChange}
+                  onBlur={handleCepBlur}
+                />
+              </div>
+
+              <div className="sm:col-span-8">
                 <label htmlFor="reg-logradouro" className="hs-label">
                   Logradouro *
                 </label>
@@ -281,7 +297,7 @@ export function RegisterPage() {
                 />
               </div>
 
-              <div className="sm:col-span-2">
+              <div className="sm:col-span-4">
                 <label htmlFor="reg-numero" className="hs-label">
                   Número *
                 </label>
@@ -295,7 +311,7 @@ export function RegisterPage() {
                 />
               </div>
 
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-8">
                 <label htmlFor="reg-complemento" className="hs-label">
                   Complemento
                 </label>
@@ -308,7 +324,7 @@ export function RegisterPage() {
                 />
               </div>
 
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-5">
                 <label htmlFor="reg-bairro" className="hs-label">
                   Bairro *
                 </label>
@@ -322,7 +338,7 @@ export function RegisterPage() {
                 />
               </div>
 
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-5">
                 <label htmlFor="reg-cidade" className="hs-label">
                   Cidade *
                 </label>
@@ -337,7 +353,7 @@ export function RegisterPage() {
                 />
               </div>
 
-              <div className="sm:col-span-1">
+              <div className="sm:col-span-2">
                 <label htmlFor="reg-uf" className="hs-label">
                   UF *
                 </label>
@@ -353,22 +369,6 @@ export function RegisterPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="reg-cep" className="hs-label">
-                  CEP *
-                </label>
-                <input
-                  id="reg-cep"
-                  required
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  value={form.cep}
-                  onChange={(e) => updateField("cep", maskCep(e.target.value))}
-                  placeholder="39400-000"
-                  className="hs-input font-mono-num"
-                />
               </div>
             </div>
           </fieldset>
