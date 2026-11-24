@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Cpu, Home, MapPin, Pencil, Plus, Trash2, Zap } from "lucide-react";
 import { api } from "../api/client";
@@ -93,10 +93,10 @@ export function HousesPage() {
     loadCasas();
   }, []);
 
-  function closeModal() {
+  const closeModal = useCallback(() => {
     resetCepLookup();
     setModalOpen(false);
-  }
+  }, [resetCepLookup]);
 
   function openCreate() {
     resetCepLookup();
